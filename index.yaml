@@ -1,0 +1,301 @@
+openapi: '3.0.0'
+info:
+  version: '1.0.0'
+  title: 'Service API'
+  description: API для услуг
+servers:
+  - url: http://localhost:8080
+    description: Example server
+paths:
+  /search_services:
+    get:
+      summary: Поиск услуг по маскам имени и категории
+      parameters:
+      - name: name
+        description: Имя
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: type
+        description: Категория
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The services for the provided masks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services'
+        400:
+          description: Недостаточно параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No services found for the provided mask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /all_services:
+    get:
+      summary: Получение списка всех услуг
+      responses:
+        '200':
+          description: The all services
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/services'
+        404:
+          description: No services found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /service:
+    get:
+      summary: Чтение информации о услуге
+      parameters:
+      - name: id
+        description: Уникальный идентификатор услуги
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/service_id'
+      responses:
+        '200':
+          description: Найденная услуга
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/service'
+        400:
+          description: Недостаточно параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Услуга не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Неожиданная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Добавление новой услуги
+      parameters:
+      - name: name
+        description: Название услуги
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: type
+        description: Категория
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: desk
+        description: Описание
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: price
+        description: Цена 
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: author_id
+        description: Идентефикатор создателя
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Идентификатор, добавленной услуги
+          content:
+            application/json:
+              schema:
+                type: integer
+        400:
+          description: Недостаточно параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ошибка добавления услуги
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Неожиданная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Изменение услуги
+      parameters:
+      - name: id
+        description: Уникальный идентификатор услуги
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/service_id'
+      - name: name
+        description: Название услуги
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: type
+        description: Категория
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: desk
+        description: Описание
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: price
+        description: Цена 
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: author_id
+        description: Идентефикатор создателя
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Успешное изменение услуги
+        400:
+          description: Недостаточно параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Услуга не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Неожиданная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Удаление услуги
+      parameters:
+      - name: id
+        description: Уникальный идентификатор услуги
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/service_id'
+      responses:
+        '200':
+          description: Услуга успешно удалена
+        400:
+          description: Недостаточно параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Услуга не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Неожиданная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    service_id:
+      description: Уникальный идентификатор услуги
+      type: integer
+    services:
+      type: array
+      items:
+        $ref: '#/components/schemas/service'  
+    service:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - desc
+        - price
+        - date
+        - author_id
+      properties:
+        id:
+          $ref: '#/components/schemas/service_id'
+        name:
+          type: string
+        type:
+          type: string
+        desc:
+          type: string
+        price:
+          type: string
+        date:
+          type: string
+        author_id:
+          type: integer
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: Сообщение о ошибке
+          type: string
+  securitySchemes:
+      basicAuth:     
+        type: http
+        scheme: basic
