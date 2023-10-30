@@ -27,20 +27,19 @@ namespace database
 
             Poco::Data::Session session = database::Database::get().create_session();
             Statement create_stmt(session);
-            create_stmt << "CREATE TABLE IF NOT EXISTS `service` (`service_id` INT NOT NULL AUTO_INCREMENT,"
+            create_stmt << "CREATE TABLE IF NOT EXISTS `service` ("
+                        << "`service_id` INT NOT NULL AUTO_INCREMENT,"
                         << "`name` VARCHAR(256) NOT NULL,"
                         << "`type` VARCHAR(40) NOT NULL,"
                         << "`description` VARCHAR(4000),"
-                        << "`price` NUMBER(19, 4) NOT NULL,"
+                        << "`price` DECIMAL(19, 4) NOT NULL,"
                         << "`creation_date` DATE NOT NULL,"
-                        << "`author_id` INTEGER NOT NULL,"
-                        << "PRIMARY KEY (`service_id`);"
-
-                        << "ALTER TABLE service"
-                        << "ADD CONSTRAINT `author_fk` FOREIGN KEY ( `author_id` )"
-                        << "REFERENCES `USER` ( `user_id` )"
-                        << "NOT DEFERRABLE;",    
+                        << "`author_id` INT NOT NULL,"
+                        << "PRIMARY KEY (`service_id`),"
+                        << "FOREIGN KEY (`author_id`) REFERENCES `user` (`user_id`)"
+                        << ");",
                 now;
+            
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e)
@@ -63,7 +62,9 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement update(session);
 
-            update << "UPDATE service SET name = ?,type = ?,desc = ?,price = ?,date = TO_DATE(?, " << DATE_FORMAT <<  "),author_id= ? where service_id = ?",
+            update  << "UPDATE `service`"
+                    << "SET `name` = ?, `type` = ?, `desc` = ?, `price` = ?, `date` = TO_DATE(?, " << DATE_FORMAT <<  "), `author_id`= ? "
+                    << "where `service_id` = ?",
                 use(_name),
                 use(_type),
                 use(_desc),
@@ -97,7 +98,7 @@ namespace database
             Statement del(session);
             
             Service a;
-            del << "DELETE FROM service WHERE service_id = ?;",
+            del << "DELETE FROM `service` WHERE `service_id` = ?;",
                 use(id),
                 range(0, 1); 
             del.execute();
@@ -159,7 +160,9 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select << "SELECT id, name, type, desc, price, TO_CHAR(date, " << DATE_FORMAT << ") author_id FROM service WHERE service_id = ?;",
+            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`"
+                    << "FROM `service`" 
+                    << "WHERE `service_id` = ? ;",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -195,7 +198,8 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select << "SELECT id, name, type, desc, price, TO_CHAR(date, " << DATE_FORMAT << ") author_id FROM service;",
+            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`" 
+                    << "FROM `service`;",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -237,7 +241,8 @@ namespace database
             Service a;
             name += "%";
             type += "%";
-            select << "SELECT id, name, type, desc, price, TO_CHAR(date, "<< DATE_FORMAT << "), author_id FROM service where name LIKE ? and type LIKE ?",
+            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, "<< DATE_FORMAT << "), `author_id`" 
+                    << "FROM service where name LIKE ? and type LIKE ?",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -278,7 +283,8 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement insert(session);
 
-            insert << "INSERT INTO service (name,type,desc,price,date,author_id) VALUES(?, ?, ?, ?, TO_DATE(?, " << DATE_FORMAT << "), ?)",
+            insert  << "INSERT INTO `service` (`name`, `type`, `desc`, `price`, `date`, `author_id`)"
+                    << "VALUES(?, ?, ?, ?, TO_DATE(?, " << DATE_FORMAT << "), ?)",
                 use(_name),
                 use(_type),
                 use(_desc),
