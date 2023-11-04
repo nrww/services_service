@@ -73,18 +73,16 @@ private:
             reason = "Name must be at leas 3 signs";
             return false;
         }
-
         return true;
     };
 
     bool check_price(const std::string &price, std::string &reason)
-    {
+    {     
         if (stod(price) < 0)
         {
             reason = "Price must be non-negative";
             return false;
         }
-
         return true;
     };
 
@@ -117,16 +115,7 @@ private:
         std::ostream &ostr = response.send();
         Poco::JSON::Stringifier::stringify(root, ostr);
     }
-
-    std::string currentDateToString()
-    {
-        auto t = std::time(nullptr);
-        auto tm = *std::localtime(&t);
-
-        std::ostringstream oss;
-        oss << std::put_time(&tm, "%d.%m.%Y %H:%M:%S");
-        return oss.str();
-    };
+    
 
 public:
     ServiceHandler(const std::string &format) : _format(format)
@@ -139,6 +128,8 @@ public:
         HTMLForm form(request, request.stream());
         try
         {
+            response.set("Access-Control-Allow-Origin", "*"); //для работы swagger
+
             if (hasSubstr(request.getURI(), "/service"))
             {
                 if(request.getMethod() == Poco::Net::HTTPRequest::HTTP_GET)
@@ -146,20 +137,20 @@ public:
                     if(form.has("id"))
                     {
                         long id = atol(form.get("id").c_str());
-
                         std::optional<database::Service> result = database::Service::read_by_id(id);
                         if (result)
-                        {
+                        {               
                             response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                             response.setChunkedTransferEncoding(true);
                             response.setContentType("application/json");
                             std::ostream &ostr = response.send();
                             Poco::JSON::Stringifier::stringify(result->toJSON(), ostr);
+                            
                             return;
                         }
                         else
                         {
-                            notFoundError(response, request.getURI(), "service not found");
+                            notFoundError(response, request.getURI(), "Service id " + form.get("id") + " not found");
                             return;
                         }
                     }
@@ -180,7 +171,6 @@ public:
                         service.type() = form.get("type");
                         service.desc() = form.get("desc");
                         service.price() = form.get("price");
-                        service.date() = currentDateToString();
                         //add check foreign key
                         service.author_id() = atol(form.get("author_id").c_str());
     
@@ -204,11 +194,15 @@ public:
                         if (check_result)
                         {
                             service.save_to_mysql();
+                            
                             response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                             response.setChunkedTransferEncoding(true);
                             response.setContentType("application/json");
+                            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+                            root->set("created", service.id());
                             std::ostream &ostr = response.send();
-                            ostr << service.get_id();
+                            Poco::JSON::Stringifier::stringify(root, ostr);
+
                             return;
                         }
                         else
@@ -234,10 +228,9 @@ public:
                         service.type() = form.get("type");
                         service.desc() = form.get("desc");
                         service.price() = form.get("price");
-                        service.date() = currentDateToString();
                         //add check foreign key
                         service.author_id() = atol(form.get("author_id").c_str());
-    
+
                         bool check_result = true;
                         std::string message;
                         std::string reason;
@@ -258,9 +251,15 @@ public:
                         if (check_result)
                         {
                             service.update_in_mysql();
+
                             response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                             response.setChunkedTransferEncoding(true);
                             response.setContentType("application/json");
+                            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+                            root->set("updated", service.id());
+                            std::ostream &ostr = response.send();
+                            Poco::JSON::Stringifier::stringify(root, ostr);
+
                             return;
                         }
                         else
@@ -286,11 +285,16 @@ public:
                             response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                             response.setChunkedTransferEncoding(true);
                             response.setContentType("application/json");
+                            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+                            root->set("deleted", id);
+                            std::ostream &ostr = response.send();
+                            Poco::JSON::Stringifier::stringify(root, ostr);
+
                             return;
                         }
                         else
                         {
-                            notFoundError(response, request.getURI(), "service not found");
+                            notFoundError(response, request.getURI(), "Service id" + form.get("id") + "not found");
                             return;
                         }
                     }
@@ -299,9 +303,7 @@ public:
                         badRequestError(response, request.getURI());
                         return;
                     }
-                    
-                }
-                
+                }                
             }
             else if (hasSubstr(request.getURI(), "/all_services"))
             {
@@ -311,43 +313,48 @@ public:
                     Poco::JSON::Array arr;
                     for (auto s : results)
                         arr.add(s.toJSON());
-
+                    
                     response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                     response.setChunkedTransferEncoding(true);
                     response.setContentType("application/json");
                     std::ostream &ostr = response.send();
                     Poco::JSON::Stringifier::stringify(arr, ostr);
-                    return;
-                    
+
+                    return;                   
                 }
                 else
                 {
-                    notFoundError(response, request.getURI(), "service not found");
+                    notFoundError(response, request.getURI(), "Services not found");
                     return;
                 }                            
             }
             else if (hasSubstr(request.getURI(), "/search_services"))
             {
-                if(form.has("name") && form.has("type"))
+                if(form.has("name"))
                 {
                     std::string fn = form.get("name");
-                    std::string ln = form.get("type");
+                    std::string ln = "";
+                    if(form.has("type"))
+                        ln = form.get("type");
+                    
                     auto results = database::Service::search(fn, ln);
                     if(!results.empty())
                     {
                         Poco::JSON::Array arr;
                         for (auto s : results)
                             arr.add(s.toJSON());
+                        
                         response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
                         response.setChunkedTransferEncoding(true);
                         response.setContentType("application/json");
                         std::ostream &ostr = response.send();
                         Poco::JSON::Stringifier::stringify(arr, ostr);
+
                         return;
                     }
                     else
                     {
-                        notFoundError(response, request.getURI(), "service not found");
+                        notFoundError(response, request.getURI(), "services not found");
                         return;
                     }                   
                 }
@@ -358,10 +365,11 @@ public:
                 }
             }          
         }
-        catch (...)
+        catch (...)//(const Poco::Exception& e)
         {
+            //std::cout<<e.displayText()<<std::endl;
         }
-        notFoundError(response, request.getURI(), "request ot found");
+        notFoundError(response, request.getURI(), "Request not found");
     }
 
 private:
