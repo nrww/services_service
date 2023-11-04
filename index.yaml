@@ -20,7 +20,7 @@ paths:
       - name: type
         description: Категория
         in: query
-        required: true
+        required: false
         schema:
           type: string
       responses:
@@ -120,7 +120,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: desk
+      - name: desc
         description: Описание
         in: query
         required: true
@@ -184,7 +184,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: desk
+      - name: desc
         description: Описание
         in: query
         required: true
