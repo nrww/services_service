@@ -15,7 +15,7 @@
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
 using Poco::Data::Statement;
-#define DATE_FORMAT "`DD.MM.YYYY HH24:MI:SS`"
+#define DATE_FORMAT "\'DD.MM.YYYY HH24:MI:SS\'"
 
 namespace database
 {
@@ -31,9 +31,9 @@ namespace database
                         << "`service_id` INT NOT NULL AUTO_INCREMENT,"
                         << "`name` VARCHAR(256) NOT NULL,"
                         << "`type` VARCHAR(40) NOT NULL,"
-                        << "`description` VARCHAR(4000),"
+                        << "`desc` VARCHAR(4000),"
                         << "`price` DECIMAL(19, 4) NOT NULL,"
-                        << "`creation_date` DATE NOT NULL,"
+                        << "`date` DATETIME NOT NULL,"
                         << "`author_id` INT NOT NULL,"
                         << "PRIMARY KEY (`service_id`),"
                         << "FOREIGN KEY (`author_id`) REFERENCES `user` (`user_id`)"
@@ -63,15 +63,15 @@ namespace database
             Poco::Data::Statement update(session);
 
             update  << "UPDATE `service`"
-                    << "SET `name` = ?, `type` = ?, `desc` = ?, `price` = ?, `date` = TO_DATE(?, " << DATE_FORMAT <<  "), `author_id`= ? "
-                    << "where `service_id` = ?",
+                    << "SET `name` = ?, `type` = ?, `desc` = ?, `price` = ?, `date` = NOW(), `author_id`= ? "
+                    << "WHERE `service_id` = ?;",
                 use(_name),
                 use(_type),
                 use(_desc),
                 use(_price),
-                use(_date),
                 use(_author_id),
-                use(_id);
+                use(_id),
+                now;
 
             update.execute();
 
@@ -160,7 +160,7 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`"
+            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`"
                     << "FROM `service`" 
                     << "WHERE `service_id` = ? ;",
                 into(a._id),
@@ -173,7 +173,9 @@ namespace database
                 use(id),
                 range(0, 1); //  iterate over result set one row at a time
 
-            return a;
+            select.execute();
+            Poco::Data::RecordSet rs(select);
+            if (rs.moveFirst()) return a;
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e)
@@ -198,7 +200,7 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`" 
+            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`" 
                     << "FROM `service`;",
                 into(a._id),
                 into(a._name),
@@ -223,7 +225,6 @@ namespace database
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
             std::cout << "statement:" << e.what() << std::endl;
             throw;
         }
@@ -233,6 +234,11 @@ namespace database
     std::vector<Service> Service::search(std::string name, std::string type)
     {
         std::vector<Service> result;
+        std::transform(name.begin(), name.end(), name.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+
+        std::transform(type.begin(), type.end(), type.begin(),
+        [](unsigned char c){ return std::tolower(c); });
 
         try
         {
@@ -241,8 +247,8 @@ namespace database
             Service a;
             name += "%";
             type += "%";
-            select  << "SELECT `id`, `name`, `type`, `desc`, `price`, TO_CHAR(`date`, "<< DATE_FORMAT << "), `author_id`" 
-                    << "FROM service where name LIKE ? and type LIKE ?",
+            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, "<< DATE_FORMAT << "), `author_id`" 
+                    << "FROM service where LOWER(`name`) LIKE ? and LOWER(`type`) LIKE ?",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -284,12 +290,11 @@ namespace database
             Poco::Data::Statement insert(session);
 
             insert  << "INSERT INTO `service` (`name`, `type`, `desc`, `price`, `date`, `author_id`)"
-                    << "VALUES(?, ?, ?, ?, TO_DATE(?, " << DATE_FORMAT << "), ?)",
+                    << "VALUES(?, ?, ?, ?, NOW(), ?)",
                 use(_name),
                 use(_type),
                 use(_desc),
                 use(_price),
-                use(_date),
                 use(_author_id);
 
             insert.execute();
@@ -307,13 +312,12 @@ namespace database
         }
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
+            std::cout << "connection: " << e.what() << std::endl;
             throw;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
+            std::cout << "statement: " << e.what() << std::endl;
             throw;
         }
     }
