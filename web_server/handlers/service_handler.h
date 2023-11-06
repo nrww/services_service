@@ -66,6 +66,7 @@ static bool hasSubstr(const std::string &str, const std::string &substr)
 class ServiceHandler : public HTTPRequestHandler
 {
 private:
+
     bool check_name(const std::string &name, std::string &reason)
     {
         if (name.length() < 3)
@@ -116,7 +117,6 @@ private:
         Poco::JSON::Stringifier::stringify(root, ostr);
     }
     
-
 public:
     ServiceHandler(const std::string &format) : _format(format)
     {
@@ -190,20 +190,25 @@ public:
                             message += reason;
                             message += "<br>";
                         }
-    
                         if (check_result)
                         {
-                            service.save_to_mysql();
-                            
-                            response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
-                            response.setChunkedTransferEncoding(true);
-                            response.setContentType("application/json");
-                            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
-                            root->set("created", service.id());
-                            std::ostream &ostr = response.send();
-                            Poco::JSON::Stringifier::stringify(root, ostr);
+                            if(service.save_to_mysql())
+                            {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                response.setChunkedTransferEncoding(true);
+                                response.setContentType("application/json");
+                                Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+                                root->set("created", service.id());
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(root, ostr);
 
-                            return;
+                                return;
+                            }
+                            else
+                            {
+                                notFoundError(response, request.getURI(), "Service not saved");
+                                return;
+                            }       
                         }
                         else
                         {
@@ -250,17 +255,24 @@ public:
     
                         if (check_result)
                         {
-                            service.update_in_mysql();
+                            if(service.update_in_mysql())
+                            {
+                                response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+                                response.setChunkedTransferEncoding(true);
+                                response.setContentType("application/json");
+                                Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
+                                root->set("updated", service.id());
+                                std::ostream &ostr = response.send();
+                                Poco::JSON::Stringifier::stringify(root, ostr);
 
-                            response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
-                            response.setChunkedTransferEncoding(true);
-                            response.setContentType("application/json");
-                            Poco::JSON::Object::Ptr root = new Poco::JSON::Object();
-                            root->set("updated", service.id());
-                            std::ostream &ostr = response.send();
-                            Poco::JSON::Stringifier::stringify(root, ostr);
-
-                            return;
+                                return;
+                            }
+                            else
+                            {
+                                notFoundError(response, request.getURI(), "Service not updated");
+                                return;
+                            }
+                            
                         }
                         else
                         {
@@ -330,10 +342,12 @@ public:
             }
             else if (hasSubstr(request.getURI(), "/search_services"))
             {
-                if(form.has("name"))
+                if(form.has("name") || form.has("type"))
                 {
-                    std::string fn = form.get("name");
+                    std::string fn = "";
                     std::string ln = "";
+                    if(form.has("name"))
+                        fn = form.get("name");
                     if(form.has("type"))
                         ln = form.get("type");
                     
@@ -354,7 +368,7 @@ public:
                     }
                     else
                     {
-                        notFoundError(response, request.getURI(), "services not found");
+                        notFoundError(response, request.getURI(), "Services not found");
                         return;
                     }                   
                 }

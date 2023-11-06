@@ -19,12 +19,10 @@ using Poco::Data::Statement;
 
 namespace database
 {
-
     void Service::init()
     {
         try
         {
-
             Poco::Data::Session session = database::Database::get().create_session();
             Statement create_stmt(session);
             create_stmt << "CREATE TABLE IF NOT EXISTS `service` ("
@@ -41,30 +39,26 @@ namespace database
                 now;
             
         }
-
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
     }
 
-    void Service::update_in_mysql()
+    bool Service::update_in_mysql()
     {
         try
         {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement update(session);
 
-            update  << "UPDATE `service`"
+            update  << "UPDATE `service` "
                     << "SET `name` = ?, `type` = ?, `desc` = ?, `price` = ?, `date` = NOW(), `author_id`= ? "
-                    << "WHERE `service_id` = ?;",
+                    << "WHERE `service_id` = ? ; ",
                 use(_name),
                 use(_type),
                 use(_desc),
@@ -76,18 +70,17 @@ namespace database
             update.execute();
 
             std::cout << "updated: " << _id << std::endl;
+            return true;
         }
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
+        return false;
     }
 
     bool Service::delete_in_mysql(long id)
@@ -105,17 +98,13 @@ namespace database
             std::cout << "deleted: " << id << std::endl;
             return true;
         }
-
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         return false;
     }
@@ -160,9 +149,9 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`"
-                    << "FROM `service`" 
-                    << "WHERE `service_id` = ? ;",
+            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id` "
+                    << "FROM `service` " 
+                    << "WHERE `service_id` = ? ; ",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -177,17 +166,13 @@ namespace database
             Poco::Data::RecordSet rs(select);
             if (rs.moveFirst()) return a;
         }
-
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         return {};
     }
@@ -200,8 +185,8 @@ namespace database
             Poco::Data::Session session = database::Database::get().create_session();
             Statement select(session);
             Service a;
-            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id`" 
-                    << "FROM `service`;",
+            select  << "SELECT `service_id`, `name`, `type`, `desc`, CAST(`price` as CHAR(25)), TO_CHAR(`date`, " << DATE_FORMAT << "), `author_id` " 
+                    << "FROM `service` ; ",
                 into(a._id),
                 into(a._name),
                 into(a._type),
@@ -216,24 +201,23 @@ namespace database
                 if (select.execute())
                     result.push_back(a);
             }
+            return result;
         }
-
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
-        return result;
+        return std::vector<Service>();
     }
 
     std::vector<Service> Service::search(std::string name, std::string type)
     {
         std::vector<Service> result;
+
         std::transform(name.begin(), name.end(), name.begin(),
         [](unsigned char c){ return std::tolower(c); });
 
@@ -265,32 +249,29 @@ namespace database
                 if (select.execute())
                     result.push_back(a);
             }
+            return result;
         }
 
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-
-            std::cout << "statement:" << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
-        return result;
+        return std::vector<Service>();
     }
 
-    void Service::save_to_mysql()
+    bool Service::save_to_mysql()
     {
-
         try
         {
             Poco::Data::Session session = database::Database::get().create_session();
             Poco::Data::Statement insert(session);
 
-            insert  << "INSERT INTO `service` (`name`, `type`, `desc`, `price`, `date`, `author_id`)"
-                    << "VALUES(?, ?, ?, ?, NOW(), ?)",
+            insert  << "INSERT INTO `service` (`name`, `type`, `desc`, `price`, `date`, `author_id` ) "
+                    << "VALUES( ?, ?, ?, ?, NOW(), ? ) ; ",
                 use(_name),
                 use(_type),
                 use(_desc),
@@ -309,62 +290,17 @@ namespace database
                 select.execute();
             }
             std::cout << "inserted: " << _id << std::endl;
+            return true;
         }
         catch (Poco::Data::MySQL::ConnectionException &e)
         {
-            std::cout << "connection: " << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
         catch (Poco::Data::MySQL::StatementException &e)
         {
-            std::cout << "statement: " << e.what() << std::endl;
-            throw;
+            std::cout << e.displayText() << std::endl;
         }
-    }
-
-    const std::string &Service::get_date() const
-    {
-        return _date;
-    }
-
-    const long &Service::get_author_id() const
-    {
-        return _author_id;
-    }
-
-    std::string &Service::date()
-    {
-        return _date;
-    }
-
-    long &Service::author_id()
-    {
-        return _author_id;
-    }
-
-    long Service::get_id() const
-    {
-        return _id;
-    }
-
-    const std::string &Service::get_name() const
-    {
-        return _name;
-    }
-
-    const std::string &Service::get_type() const
-    {
-        return _type;
-    }
-
-    const std::string &Service::get_desc() const
-    {
-        return _desc;
-    }
-
-    const std::string &Service::get_price() const
-    {
-        return _price;
+        return false;
     }
 
     long &Service::id()
@@ -391,4 +327,50 @@ namespace database
     {
         return _price;
     }
+
+    std::string &Service::date()
+    {
+        return _date;
+    }
+
+    long &Service::author_id()
+    {
+        return _author_id;
+    }
+
+    const long &Service::get_id() const
+    {
+        return _id;
+    }
+
+    const std::string &Service::get_name() const
+    {
+        return _name;
+    }
+
+    const std::string &Service::get_type() const
+    {
+        return _type;
+    }
+
+    const std::string &Service::get_desc() const
+    {
+        return _desc;
+    }
+
+    const std::string &Service::get_price() const
+    {
+        return _price;
+    }
+
+    const std::string &Service::get_date() const
+    {
+        return _date;
+    }
+
+    const long &Service::get_author_id() const
+    {
+        return _author_id;
+    }
+
 }
