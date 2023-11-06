@@ -27,8 +27,8 @@ namespace database
             Statement create_stmt(session);
             create_stmt << "CREATE TABLE IF NOT EXISTS `service` ("
                         << "`service_id` INT NOT NULL AUTO_INCREMENT,"
-                        << "`name` VARCHAR(256) NOT NULL,"
-                        << "`type` VARCHAR(40) NOT NULL,"
+                        << "`name` VARCHAR(400) NOT NULL,"
+                        << "`type` VARCHAR(400) NOT NULL,"
                         << "`desc` VARCHAR(4000),"
                         << "`price` DECIMAL(19, 4) NOT NULL,"
                         << "`date` DATETIME NOT NULL,"
