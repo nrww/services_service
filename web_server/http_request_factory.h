@@ -53,11 +53,14 @@ public:
         const HTTPServerRequest& request)
     {
 
-        std::cout << request.getMethod() <<" request:" << request.getURI()<< std::endl;
         if (hasSubstr(request.getURI(),"/service") ||
             hasSubstr(request.getURI(),"/search_services") ||
-            hasSubstr(request.getURI(),"/all_services")) 
-            return new ServiceHandler(_format);
+            hasSubstr(request.getURI(),"/all_services"))
+            {
+                std::cout << request.getMethod() <<" request:" << request.getURI()<< std::endl;
+                return new ServiceHandler(_format);
+            } 
+            
         return 0;
     }
 
