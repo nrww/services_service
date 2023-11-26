@@ -36,6 +36,8 @@ namespace database
             std::string &date();
             long        &author_id();
 
+            bool is_user_exist();
+
             static void init();
             bool        update_in_mysql();
             bool        save_to_mysql();

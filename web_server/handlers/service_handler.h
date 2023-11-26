@@ -177,6 +177,12 @@ public:
                         bool check_result = true;
                         std::string message;
                         std::string reason;
+
+                        if(!service.is_user_exist())
+                        {
+                            check_result = false;
+                            message += "Пользователь с таким id не существует <br>";
+                        }
     
                         if (!check_name(service.get_name(), reason))
                         {
@@ -239,7 +245,12 @@ public:
                         bool check_result = true;
                         std::string message;
                         std::string reason;
-    
+
+                        if(!service.is_user_exist())
+                        {
+                            check_result = false;
+                            message += "Пользователь с таким id не существует <br>";
+                        }
                         if (!check_name(service.get_name(), reason))
                         {
                             check_result = false;
